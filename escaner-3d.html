@@ -105,21 +105,22 @@ $('bPr').onclick=()=>{
 };
 function build(){
  const N=+$('res').value,cx=W/2;
+ const V=views.filter(o=>o.m.reduce((a,b)=>a+b,0)>60),tol=Math.floor(V.length*0.12);
  let minY=H,maxY=0,R=0;
- for(const o of views)for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(o.m[y*W+x]){
+ for(const o of V)for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(o.m[y*W+x]){
   if(y<minY)minY=y;if(y>maxY)maxY=y;const r=Math.abs(x-cx);if(r>R)R=r}
  if(maxY<=minY){msg('No se detectó el objeto. Sube la sensibilidad y repite.');return}
  const hpx=maxY-minY+1,k=(+$('mm').value)/hpx,cy=(minY+maxY)/2;
  const side=Math.max(2*R+2,hpx+2),vox=new Uint8Array(N*N*N).fill(1);
- const cs=views.map(o=>[Math.cos(o.a*Math.PI/180),Math.sin(o.a*Math.PI/180)]);
+ const cs=V.map(o=>[Math.cos(o.a*Math.PI/180),Math.sin(o.a*Math.PI/180)]);
  for(let ix=0;ix<N;ix++){const X=((ix+.5)/N-.5)*side;
   for(let iy=0;iy<N;iy++){const Y=((iy+.5)/N-.5)*side,py=Math.round(cy-Y);
    for(let iz=0;iz<N;iz++){const Z=((iz+.5)/N-.5)*side;
-    let ok=1;
+    let ok=1,miss=0;
     if(py<0||py>=H)ok=0;
-    else for(let t=0;t<views.length;t++){
+    else for(let t=0;t<V.length;t++){
      const px=Math.round(cx+X*cs[t][0]+Z*cs[t][1]);
-     if(px<0||px>=W||!views[t].m[py*W+px]){ok=0;break}
+     if(px<0||px>=W||!V[t].m[py*W+px]){if(++miss>tol){ok=0;break}}
     }
     vox[(ix*N+iy)*N+iz]=ok;
  }}}
@@ -132,6 +133,7 @@ function build(){
   P.push([+x.toFixed(2),+y.toFixed(2),+z.toFixed(2)]);if(y<yMin)yMin=y;
  }
  for(const p of P)p[1]=+(p[1]-yMin).toFixed(2);
+ if(!P.length){msg('0 puntos: las siluetas no coinciden. Centra el objeto sobre el eje verde, no muevas el teléfono y repite.');return}
  pts=P;
  info={unidad:'mm',ejeVertical:'Y',vistas:views.length,rejilla:N,mmPorVoxel:+(side*k/N).toFixed(3),puntos:P.length};
  $('bPly').disabled=$('bJs').disabled=false;
